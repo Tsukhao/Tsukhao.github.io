@@ -211,8 +211,7 @@
             </div>
         </div>
         <div class="col-md-8 col-md-offset-2">
-      		<p>##前缀索引和索引选择性</p>
-<p>有时候为存储较长数据的列增加完整长度索引，会浪费不少空间，不是一个很好的方式，从索引的选择性考虑(索引选择性指不重复的索引值和数据的总数比值)，索引的选择性越高则查询效率越高，所以可以考虑选择列的前缀作为索引，以满足查询性能。</p>
+      		<h2 id="前缀索引和索引选择性"><a href="#前缀索引和索引选择性" class="headerlink" title="前缀索引和索引选择性"></a>前缀索引和索引选择性</h2><p>有时候为存储较长数据的列增加完整长度索引，会浪费不少空间，不是一个很好的方式，从索引的选择性考虑(索引选择性指不重复的索引值和数据的总数比值)，索引的选择性越高则查询效率越高，所以可以考虑选择列的前缀作为索引，以满足查询性能。</p>
 <blockquote>
 <p><code>TEXT</code>、<code>BLOB</code>类型列如果要设置索引，必须使用前缀索引，MySQL不允许索引这些类型列的完整长度。</p>
 </blockquote>
@@ -225,8 +224,7 @@
 <blockquote>
 <p>前缀索引的好处是可以使索引更小，但其缺点是MySQL中前缀索无法应用在<code>ORDER BY</code>和<code>GROUP BY</code>上，也无法用其做覆盖扫描，合理使用前缀索引可以大大提高查询效率。</p>
 </blockquote>
-<p>##多列索引</p>
-<p>在业务处理中，可能会使用or关键字来查询，在MySQL低版本由于不能同时使用多列索引，有的优化建议尽量不要在索引列上使用<code>or</code>，会导致全表扫描，建议使用<code>union</code>或<code>union all</code>改写sql，如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">select * from employees where emp_no=10017 OR birth_date=1958-07-06;</div></pre></td></tr></table></figure></p>
+<h2 id="多列索引"><a href="#多列索引" class="headerlink" title="多列索引"></a>多列索引</h2><p>在业务处理中，可能会使用or关键字来查询，在MySQL低版本由于不能同时使用多列索引，有的优化建议尽量不要在索引列上使用<code>or</code>，会导致全表扫描，建议使用<code>union</code>或<code>union all</code>改写sql，如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">select * from employees where emp_no=10017 OR birth_date=1958-07-06;</div></pre></td></tr></table></figure></p>
 <p>优化为：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">select * from employees where emp_no=10017 UNION ALL select * from employees where birth_date=1958-07-06 AND emp_no &lt;&gt;10017;</div></pre></td></tr></table></figure></p>
 <p>在MySQL5.0或更高版本中，加入了<code>index merge</code>策略，MySQL可以同时扫描多个单列索引，并将结果进行合并。有三种表现：<code>or</code>条件的联合，<code>AND</code>条件的相交，组合前两种情况的联合或相交，可以通过<code>EXPLAIN</code>来看一下。<br>需要新的数据，创建新表和插入新数据：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">CREATE TABLE users (</div><div class="line">  user_id INT UNSIGNED NOT NULL AUTO_INCREMENT,</div><div class="line">  parent_id INT NOT NULL DEFAULT 0,</div><div class="line">  status TINYINT UNSIGNED NOT NULL DEFAULT 0,</div><div class="line">  user_type TINYINT UNSIGNED NOT NULL DEFAULT 0,</div><div class="line">  username VARCHAR(20),</div><div class="line">  ... other columns here ...</div><div class="line">  PRIMARY KEY(user_id),</div><div class="line">  INDEX `parent_id` (parent_id),</div><div class="line">  INDEX `status` (status),</div><div class="line">  INDEX `user_type` (user_type)</div><div class="line">) ENGINE=InnoDB;</div></pre></td></tr></table></figure></p>
 <p>用<code>EXPLAIN</code>查看执行计划可以看到，type列的类型为<code>index_merge</code>，Extra列<code>Using intersect(user_type,status,parent_id)</code>的嵌套操作。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">mysql&gt;EXPLAIN SELECT user_id FROM user WHERE user_type=2 AND status=1 AND parent_id=0 AND user_id &gt; 2938575 ORDER BY user_id LIMIT 1;</div><div class="line">*************************** 1. row ***************************</div><div class="line">                       id: 1</div><div class="line">              select_type: SIMPLE</div><div class="line">                    table: users</div><div class="line">                     type: index_merge</div><div class="line">            possible_keys: PRIMARY,parent_id,status,user_type</div><div class="line">                      key: user_type,status,parent_id</div><div class="line">                  key_len: 2,2,4</div><div class="line">                      ref: NULL</div><div class="line">                     rows: 5108</div><div class="line">                    Extra: Using intersect(user_type,status,parent_id); Using where; Using index; Using filesort</div></pre></td></tr></table></figure></p>
@@ -238,10 +236,6 @@
         </div>
         <nav class="pagination" role="pagination">
     
-    
-    <a class="pull-right" href="/2016/08/13/hello-world/">
-        Hello World →
-    </a>
     
 </nav>
 
