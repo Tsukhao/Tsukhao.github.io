@@ -229,6 +229,46 @@
         <div class="row">
             <div class="col-md-8 col-md-offset-2 opening-statement">
                 <div class="col-md-4">
+                    <h3><a href="/2016/08/15/Index/">索引杂谈</a></h3>
+                    <span>
+                        <span class="post-meta">
+      <time datetime="2016-08-15T11:17:24.000Z" itemprop="datePublished">
+          2016-08-15
+      </time>
+    
+    
+    | 
+    <a href='/tags/MySQL，索引/'>MySQL，索引</a>
+    
+    
+</span>
+                    </span>
+                </div>
+                <div class="col-md-8">
+                    <p>
+                      
+                        ##前缀索引和索引选择性
+有时候为存储较长数据的列增加完整长度索引，会浪费不少空间，不是一个很好的方式，从索引的选择性考虑(索引选择性指不重复的索引值和数据的总数比值)，索引的选择性越高则查询效率越高，所以可以考虑选择列的前缀作为索引，以满足查询性能。
+
+TEXT、BLOB类型列如果要设置索引，必须使用前缀索引，MySQL不允许索引这些类型列的完整长度。
+
+举个栗子123456789101112131415mysql&gt; selec
+                      
+                    </p>
+                    
+                    <p class="pull-right readMore">
+                        <a href="/2016/08/15/Index/">Read More...</a>
+                    </p>
+                    
+                </div>
+                <div class="clearfix"></div>
+                <hr class="nogutter">
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-8 col-md-offset-2 opening-statement">
+                <div class="col-md-4">
                     <h3><a href="/2016/08/13/hello-world/">Hello World</a></h3>
                     <span>
                         <span class="post-meta">
